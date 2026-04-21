@@ -1,0 +1,5 @@
+resources.zip
+resources_modded.zip
+__pycache__/
+*.pyc
+replacements/
