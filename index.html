@@ -2,7 +2,6 @@
 <html lang="en">
 
 <head>
-    <!-- <base href="https://cdn.jsdelivr.net/gh/genizy/fnaf@latest/1/"> -->
     <link rel="stylesheet" type="text/css" href="style.css"/>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -11,12 +10,42 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="HandheldFriendly" content="true" />
     <title>Five Nights at Mr. Wrights</title>
+    <style>
+        #credits-btn {
+            position: fixed;
+            bottom: 18px;
+            right: 22px;
+            z-index: 10000;
+            background: transparent;
+            border: 2px solid #c0392b;
+            color: #e74c3c;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 8px 18px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 0 8px rgba(192, 57, 43, 0.4);
+            text-decoration: none;
+            display: inline-block;
+            user-select: none;
+        }
+        #credits-btn:hover {
+            background: #c0392b;
+            color: #fff;
+            box-shadow: 0 0 18px rgba(192, 57, 43, 0.9);
+        }
+    </style>
 </head>
 
 <body>
     <div style="display: inline-block; -webkit-user-select: none; text-align: left">
         <canvas id="MMFCanvas" width="1280" height="720"> Your browser does not support Canvas, Please try again. </canvas>
     </div>
+
     <div id="progress-container">
         <div style="margin-bottom: 6px;">Downloading... <span id="download-text">0%</span></div>
         <div style="width: 100%; background: #444; border-radius: 6px; overflow: hidden;">
@@ -27,7 +56,59 @@
             <div id="extract-bar" style="height: 10px; background: #10b981; width: 0%; transition: width 0.2s;"></div>
         </div>
     </div>
+
+    <a id="credits-btn" href="credits.html" target="_blank">Credits</a>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        const creditsBtn = document.getElementById('credits-btn');
+        const canvas = document.getElementById('MMFCanvas');
+
+        function hideCreditsOnClick() {
+            canvas.addEventListener('click', () => {
+                creditsBtn.style.display = 'none';
+            }, { once: true });
+        }
+
+        // Hide on first canvas interaction (title screen click)
+        hideCreditsOnClick();
+
+        // Intercept Runtime constructor — fires on first load and on any page-restart.
+        // Also wraps clearRect so we can detect when the canvas gets fully wiped,
+        // which is what Clickteam Fusion does when transitioning back to the title frame.
+        Object.defineProperty(window, 'Runtime', {
+            configurable: true,
+            set(OrigRuntime) {
+                Object.defineProperty(window, 'Runtime', {
+                    configurable: true,
+                    writable: true,
+                    value: function (...args) {
+                        const instance = new OrigRuntime(...args);
+
+                        // Patch canvas 2D context to watch for a full clear,
+                        // which signals a frame/scene reset (game over → title).
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            const origClearRect = ctx.clearRect.bind(ctx);
+                            ctx.clearRect = function (x, y, w, h) {
+                                origClearRect(x, y, w, h);
+                                // Only trigger on a full-canvas wipe
+                                if (x === 0 && y === 0 && w >= canvas.width && h >= canvas.height) {
+                                    creditsBtn.style.display = 'inline-block';
+                                    hideCreditsOnClick();
+                                }
+                            };
+                        }
+
+                        return instance;
+                    }
+                });
+                window.Runtime.prototype = OrigRuntime.prototype;
+            }
+        });
+    </script>
+
     <script src="main.js"></script>
 </body>
 
