@@ -183,52 +183,32 @@ def restore():
     print("   Restore from GitHub:  git checkout -- .")
 
 def preview():
-    images_dir = os.path.join(REPLACEMENTS_DIR, "images")
-    gifs_dir   = os.path.join(REPLACEMENTS_DIR, "gifs")
+    images_dir = "/home/mack/Projects/My MULTIPLE attempts at a FNAF remake/ugs dude made ts/replacements/images"
 
-    if not os.path.exists(images_dir) and not os.path.exists(gifs_dir):
-        print("❌ No replacements/images/ or replacements/gifs/ folder found.")
-        print("   Run 'python fnaf_mod.py extract' first.")
+    if not os.path.exists(images_dir):
+        print(f"❌ Folder not found: {images_dir}")
         return
 
     print("🖼️  Generating preview...")
 
-    def collect(folder, exts):
-        if not os.path.exists(folder):
-            return []
-        return sorted(f for f in os.listdir(folder) if Path(f).suffix.lower() in exts)
+    image_files = sorted(f for f in os.listdir(images_dir) if Path(f).suffix.lower() in {".png", ".jpg", ".gif"})
 
-    image_files = collect(images_dir, {".png", ".jpg"})
-    gif_files   = collect(gifs_dir,   {".gif"})
+    if not image_files:
+        print("  ⚠️  No image files found.")
+        return
 
-    def img_card(filepath, filename):
-        with open(filepath, "rb") as f:
-            data = base64.b64encode(f.read()).decode()
-        ext  = Path(filename).suffix.lower().lstrip(".")
-        mime = "gif" if ext == "gif" else ("jpeg" if ext == "jpg" else "png")
+    def img_card(filename):
+        filepath = os.path.join(images_dir, filename)
         return f"""
         <div class="card">
-            <img src="data:image/{mime};base64,{data}" alt="{filename}" />
+            <img src="file://{filepath}" alt="{filename}" />
             <div class="label">{filename}</div>
         </div>"""
 
-    cards_html = ""
-
-    if image_files:
-        cards_html += '<h2>🖼️ Images</h2><div class="grid">'
-        for fname in image_files:
-            cards_html += img_card(os.path.join(images_dir, fname), fname)
-        cards_html += "</div>"
-
-    if gif_files:
-        cards_html += '<h2>🎞️ GIFs</h2><div class="grid">'
-        for fname in gif_files:
-            cards_html += img_card(os.path.join(gifs_dir, fname), fname)
-        cards_html += "</div>"
-
-    if not image_files and not gif_files:
-        print("  ⚠️  No image or GIF files found to preview.")
-        return
+    cards_html = '<div class="grid">'
+    for fname in image_files:
+        cards_html += img_card(fname)
+    cards_html += "</div>"
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -298,7 +278,7 @@ def preview():
 </head>
 <body>
 <h1>🎮 FNAF Mod Preview</h1>
-<p class="subtitle">Generated {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} &nbsp;·&nbsp; {len(image_files)} images, {len(gif_files)} GIFs</p>
+<p class="subtitle">Generated {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} &nbsp;·&nbsp; {len(image_files)} images</p>
 {cards_html}
 </body>
 </html>"""
@@ -307,7 +287,7 @@ def preview():
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"  ✅ {len(image_files)} images + {len(gif_files)} GIFs embedded")
+    print(f"  ✅ {len(image_files)} images")
     print(f"\n✅ Saved to '{out_path}' — opening in your browser...")
 
     try:
